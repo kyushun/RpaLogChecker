@@ -18,5 +18,10 @@ namespace RpaNotificator
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());
         }
+
+        public static string GetConfigValue(string key, string defaultValue = null)
+        {
+            return System.Configuration.ConfigurationManager.AppSettings[key] ?? defaultValue;
+        }
     }
 }
