@@ -62,12 +62,6 @@ namespace RpaNotificator
             listView1.Columns.Add("時間", -2, HorizontalAlignment.Left);
             listView1.Columns.Add("ログ", -2, HorizontalAlignment.Left);
             AddLog("プログラム起動");
-
-            DateTime dt1 = DateTime.ParseExact("2019/02/12 130000",
-                            "yyyy/MM/dd HHmmss",
-                            System.Globalization.DateTimeFormatInfo.InvariantInfo,
-                            System.Globalization.DateTimeStyles.None);
-            MessageBox.Show(dt1.ToString());
         }
 
         int test (int a)

@@ -12,6 +12,8 @@ namespace RpaNotificator
 {
     class RpaChecker
     {
+        private static string LOG_REGEX = @"^(\d{4}/\d{2}/\d{2} \d{6}) 読込csv破損：(\d+?)\..*? - BIエラー画面表示：(\d+?)\..*?$";
+
         private Form1 form1;
         private string logFileDir;
         private string _logFileName;
@@ -85,9 +87,27 @@ namespace RpaNotificator
             else
             {
                 string logs = GetLastLogs(1);
-                Match match = Regex.Match(logs, @"\d{14}…エラー画面：(\d).0回閉じて、次へスキップ");
+                Match match = Regex.Match(logs, LOG_REGEX);
 
-                if (!match.Success || match.Groups.Count < 2 || match.Groups[1].Value != "0")
+                bool hasError = false;
+                
+                if (match.Success && match.Groups.Count > 2)
+                {
+                    for (int i = 2; i < match.Groups.Count; i++)
+                    {
+                        if (match.Groups[i].Value != "0")
+                        {
+                            hasError = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    hasError = true;
+                }
+
+                if (hasError)
                 {
                     form1.AddLogFromAnotherThread("【エラー】書き込まれたログからエラーを検知しました");
                     errorsCount++;
@@ -117,24 +137,24 @@ namespace RpaNotificator
 
         private string GetSuccessNotificationMsg()
         {
-            return $"{DateTime.Now.ToString("yyyy/MM/dd hh:mm")} ロボパットの正常稼働を確認しました。";
+            return $"{DateTime.Now.ToString("yyyy/MM/dd HH:mm")} ロボパットの正常稼働を確認しました。";
         }
 
         private string GetErrorNotificationMsg()
         {
             string logs = GetLastLogs(1);
-            return $"【エラー】{DateTime.Now.ToString("yyyy/MM/dd hh:mm")}\r\n" +
-                    "エラーを検知しました。" +
+            return $"【エラー】{DateTime.Now.ToString("yyyy/MM/dd HH:mm")}\r\n" +
+                    "書き込まれたログからエラーを検知しました。" +
                     $"```{logs}```";
         }
 
         private string GetWarningNotificationMsg(int duration = 0)
         {
             string logs = GetLastLogs();
-            return $"*【警告】*{DateTime.Now.ToString("yyyy/MM/dd hh:mm")}\r\n*" +
-                    $"ログが{duration}分間書き込まれていない*ことを検出しました。\r\n" +
-                    $"・BIツールにアクセスし、社内用の各ワークスペースの「データセット」更新時間を確認ください。" +
-                    $"・BIツール更新が直近10分以内で更新されていない場合（10分以上更新が停止している場合）は、ロボパット2号機を再稼働ください。" +
+            return $"*【警告】*{DateTime.Now.ToString("yyyy/MM/dd HH:mm")}\r\n" +
+                    $"ログが*{duration}分間書き込まれていない*ことを検出しました。\r\n\r\n" +
+                     "① 社内用の各ワークスペースの「データセット」更新時間を確認ください\r\n" +
+                     "② 10分以上更新されていない場合には、ロボパット2号機を再起動してください" +
                     $"```{logs}```";
         }
 
