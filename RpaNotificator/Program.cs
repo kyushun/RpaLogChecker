@@ -16,7 +16,16 @@ namespace RpaNotificator
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            try
+            {
+                Application.Run(new Form1());
+            }
+            catch(Exception ex)
+            {
+                Notificator.HangoutsChat chat = new Notificator.HangoutsChat(GetConfigValue("WebhookUrl"));
+                chat.Send("RPA動作チェッカーがエラーを発生しました\r\n\r\n" + ex.ToString());
+                MessageBox.Show(ex.ToString());
+            }
         }
 
         public static string GetConfigValue(string key, string defaultValue = null)
