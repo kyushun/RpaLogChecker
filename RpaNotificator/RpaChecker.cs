@@ -60,18 +60,11 @@ namespace RpaNotificator
             // ファイルがなかった場合の処理は後で書く
             if (!File.Exists(filePath))
                 return;
-
-            ///
-            /// 更新日時の比較
-            ///
-            // 更新日時の取得
+            
             DateTime lastUpdatedTime = File.GetLastWriteTime(filePath);
-            // n（ログエラー判定間隔）分前の日時
             DateTime nMinutesAgo = DateTime.Now.AddMinutes(-this.logUpdateInterval);
             
-
-            // n: RPAの更新間隔（min）
-            // 最終更新から n 分以上経過している場合
+            
             if (lastUpdatedTime <= nMinutesAgo)
             {
                 missingsCount++;
@@ -80,8 +73,8 @@ namespace RpaNotificator
                 form1.AddLogFromAnotherThread($"【警告】{diffMinutes}分間ログが書き込まれていません");
                 if (errorReport)
                 {
-                    string msg = GetWarningNotificationMsg(diffMinutes);
-                    SendNotification(msg);
+                    MessageBuilder mb = new MessageBuilder(diffMinutes, GetLastLogs(3));
+                    SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.MISSING));
                 }
             }
             else
@@ -113,8 +106,8 @@ namespace RpaNotificator
                     errorsCount++;
                     if (errorReport)
                     {
-                        string msg = GetErrorNotificationMsg();
-                        SendNotification(msg);
+                        MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
+                        SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
                     }
                 }
                 else
@@ -122,8 +115,8 @@ namespace RpaNotificator
                     form1.AddLogFromAnotherThread("【正常】ログを確認しました");
                     if (normalReport)
                     {
-                        string msg = GetSuccessNotificationMsg();
-                        SendNotification(msg);
+                        MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
+                        SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
                     }
                 }
             }
@@ -133,29 +126,6 @@ namespace RpaNotificator
         {
             TimeSpan diff = afterTime - beforeTime;
             return (int)diff.TotalMinutes;
-        }
-
-        private string GetSuccessNotificationMsg()
-        {
-            return $"{DateTime.Now.ToString("yyyy/MM/dd HH:mm")} ロボパットの正常稼働を確認しました。";
-        }
-
-        private string GetErrorNotificationMsg()
-        {
-            string logs = GetLastLogs(1);
-            return $"【エラー】{DateTime.Now.ToString("yyyy/MM/dd HH:mm")}\r\n" +
-                    "書き込まれたログからエラーを検知しました。" +
-                    $"```{logs}```";
-        }
-
-        private string GetWarningNotificationMsg(int duration = 0)
-        {
-            string logs = GetLastLogs();
-            return $"*【警告】*{DateTime.Now.ToString("yyyy/MM/dd HH:mm")}\r\n" +
-                    $"ログが*{duration}分間書き込まれていない*ことを検出しました。\r\n\r\n" +
-                     "① 社内用の各ワークスペースの「データセット」更新時間を確認ください\r\n" +
-                     "② 10分以上更新されていない場合には、ロボパット2号機を再起動してください" +
-                    $"```{logs}```";
         }
 
         public void SendTest(string msg)
@@ -184,20 +154,21 @@ namespace RpaNotificator
                     {
                         while (sr.Peek() >= 0)
                         {
-                            // ファイルを 1 行ずつ読み込む
                             string stBuffer = sr.ReadLine();
+                            
+                            Match match = Regex.Match(stBuffer, LOG_REGEX);
 
-                            // 正規表現で時間抜き出し
-                            Match match = Regex.Match(stBuffer, @"\d{4}\d{2}\d{2}\d{2}(\d{2})(\d{2})…エラー画面：(\d).0回閉じて、次へスキップ");
-
-                            if (match.Success && match.Groups.Count == 4 || match.Groups[3].Value == "0")
+                            if (match.Success && match.Groups.Count == 4)
                             {
                                 var t = match.Groups;
                                 try
                                 {
-                                    // 差分時間の取り出し
-                                    int _min = int.Parse(t[1].Value);
-                                    int _sec = int.Parse(t[2].Value);
+                                    DateTime dt = DateTime.ParseExact(t[1].Value,
+                                                    "yyyy/MM/dd HHmmss",
+                                                    System.Globalization.DateTimeFormatInfo.InvariantInfo,
+                                                    System.Globalization.DateTimeStyles.None);
+                                    int _min = dt.Minute;
+                                    int _sec = dt.Second;
                                     int _min1Digit = (_min - (int)(_min / 10) * 10);
                                     int minDiff = 0;
 
@@ -226,15 +197,15 @@ namespace RpaNotificator
 
                 if (rate >= 0.975)
                 {
-                    rateMsg = $"🎉🎉本日の稼働率は{rate * 100}%でした🎉🎉";
+                    rateMsg = $"🎉🎉本日の稼働率は{(rate * 100):F1}%でした🎉🎉";
                 }
                 else if (rate > 0.8)
                 {
-                    rateMsg = $"😑😑本日の稼働率は{rate * 100}%でした😑😑";
+                    rateMsg = $"😑😑本日の稼働率は{(rate * 100):F1}%でした😑😑";
                 }
                 else if (rate > 0.6)
                 {
-                    rateMsg = $"🤕😷本日の稼働率は{rate * 100}%でした😷🤕";
+                    rateMsg = $"🤕😷本日の稼働率は{(rate * 100):F1}%でした😷🤕";
                 }
                 else
                 {
@@ -245,8 +216,7 @@ namespace RpaNotificator
                        $"エラー検出：{errorsCount}\r\n" +
                        $"ログ未取得：{missingsCount}\r\n\r\n" +
                        $"平均処理時間：{SecondsToMinutes((int)processTimesSec.Average())}\r\n" +
-                       $"最長処理時間：{SecondsToMinutes(processTimesSec.Max())}\r\n" +
-                       $"最短処理時間：{SecondsToMinutes(processTimesSec.Min())}\r\n\r\n" +
+                       $"Max：{SecondsToMinutes(processTimesSec.Max())}　Min：{SecondsToMinutes(processTimesSec.Min())}\r\n" +
                        rateMsg;
             }
             SendNotification(msg);
