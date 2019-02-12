@@ -21,7 +21,8 @@ namespace RpaNotificator
         {
             SUCCESS,
             MISSING,
-            ERROR
+            ERROR,
+            RESTORING
         }
 
         public MessageBuilder(int errorDuration = 0, string log = "")

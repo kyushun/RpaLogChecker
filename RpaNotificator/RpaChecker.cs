@@ -35,6 +35,7 @@ namespace RpaNotificator
         private int logUpdateInterval;
 
         private bool fileNotFound = false;
+        private bool isFailed = false;
         public static int traialsCount = 0;
         public static int errorsCount = 0;
         public static int missingsCount = 0;
@@ -63,63 +64,74 @@ namespace RpaNotificator
             
             DateTime lastUpdatedTime = File.GetLastWriteTime(filePath);
             DateTime nMinutesAgo = DateTime.Now.AddMinutes(-this.logUpdateInterval);
-            
-            
-            if (lastUpdatedTime <= nMinutesAgo)
-            {
-                missingsCount++;
-                int diffMinutes = DiffTimesAsMinutes(lastUpdatedTime, nMinutesAgo);
 
-                form1.AddLogFromAnotherThread($"【警告】{diffMinutes}分間ログが書き込まれていません");
-                if (errorReport)
+            string logs = GetLastLogs(1);
+            bool hasError = false;
+
+            Match match = Regex.Match(logs, LOG_REGEX);
+            if (match.Success && match.Groups.Count > 2)
+            {
+                for (int i = 2; i < match.Groups.Count; i++)
                 {
-                    MessageBuilder mb = new MessageBuilder(diffMinutes, GetLastLogs(3));
-                    SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.MISSING));
+                    if (match.Groups[i].Value != "0")
+                    {
+                        hasError = true;
+                        break;
+                    }
                 }
             }
             else
             {
-                string logs = GetLastLogs(1);
-                Match match = Regex.Match(logs, LOG_REGEX);
+                hasError = true;
+            }
 
-                bool hasError = false;
-                
-                if (match.Success && match.Groups.Count > 2)
-                {
-                    for (int i = 2; i < match.Groups.Count; i++)
-                    {
-                        if (match.Groups[i].Value != "0")
-                        {
-                            hasError = true;
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    hasError = true;
-                }
 
-                if (hasError)
+            if (hasError)
+            {
+                form1.AddLogFromAnotherThread("【エラー】書き込まれたログからエラーを検知しました");
+                errorsCount++;
+                isFailed = true;
+                if (errorReport)
                 {
-                    form1.AddLogFromAnotherThread("【エラー】書き込まれたログからエラーを検知しました");
-                    errorsCount++;
+                    MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
+                    SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
+                }
+            }
+            else
+            {
+                if (lastUpdatedTime <= nMinutesAgo)
+                {
+                    missingsCount++;
+                    isFailed = true;
+
+                    int diffMinutes = DiffTimesAsMinutes(lastUpdatedTime, nMinutesAgo);
+
+                    form1.AddLogFromAnotherThread($"【警告】{diffMinutes}分間ログが書き込まれていません");
                     if (errorReport)
                     {
-                        MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
-                        SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
+                        MessageBuilder mb = new MessageBuilder(diffMinutes, GetLastLogs(3));
+                        SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.MISSING));
                     }
                 }
                 else
                 {
                     form1.AddLogFromAnotherThread("【正常】ログを確認しました");
-                    if (normalReport)
+                    if (isFailed)
                     {
+                        isFailed = false;
                         MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
-                        SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
+                        SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.RESTORING));
+                    }
+                    else
+                    {
+                        if (normalReport)
+                        {
+                            MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
+                            SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
+                        }
                     }
                 }
-            }
+            }            
         }
 
         private int DiffTimesAsMinutes(DateTime beforeTime, DateTime afterTime)
