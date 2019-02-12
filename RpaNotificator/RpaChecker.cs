@@ -66,32 +66,20 @@ namespace RpaNotificator
             DateTime lastUpdatedTime = File.GetLastWriteTime(filePath);
             // n（ログエラー判定間隔）分前の日時
             DateTime nMinutesAgo = DateTime.Now.AddMinutes(-this.logUpdateInterval);
-            // 2n分前の日時
-            DateTime twoNMinutesAgo = DateTime.Now.AddMinutes(-2 * this.logUpdateInterval);
+            
 
             // n: RPAの更新間隔（min）
             // 最終更新から n 分以上経過している場合
             if (lastUpdatedTime <= nMinutesAgo)
             {
                 missingsCount++;
-                // 最終更新から 2n 分以上経過している場合
-                if (lastUpdatedTime <= twoNMinutesAgo)
+                int diffMinutes = DiffTimesAsMinutes(lastUpdatedTime, nMinutesAgo);
+
+                form1.AddLogFromAnotherThread($"【警告】{diffMinutes}分間ログが書き込まれていません");
+                if (errorReport)
                 {
-                    form1.AddLogFromAnotherThread($"【警告】{logUpdateInterval}分以上ログが書き込まれていません");
-                    if (errorReport)
-                    {
-                        string msg = GetWarningNotificationMsg();
-                        SendNotification(msg);
-                    }
-                }
-                else
-                {
-                    form1.AddLogFromAnotherThread($"【警告】{logUpdateInterval}分以上ログが書き込まれていません");
-                    if (errorReport)
-                    {
-                        string msg = GetCautionNotificationMsg();
-                        SendNotification(msg);
-                    }
+                    string msg = GetWarningNotificationMsg(diffMinutes);
+                    SendNotification(msg);
                 }
             }
             else
@@ -121,6 +109,12 @@ namespace RpaNotificator
             }
         }
 
+        private int DiffTimesAsMinutes(DateTime beforeTime, DateTime afterTime)
+        {
+            TimeSpan diff = afterTime - beforeTime;
+            return (int)diff.TotalMinutes;
+        }
+
         private string GetSuccessNotificationMsg()
         {
             return $"{DateTime.Now.ToString("yyyy/MM/dd hh:mm")} ロボパットの正常稼働を確認しました。";
@@ -134,18 +128,14 @@ namespace RpaNotificator
                     $"```{logs}```";
         }
 
-        private string GetCautionNotificationMsg()
-        {
-            string logs = GetLastLogs();
-            return $"【注意】{DateTime.Now.ToString("yyyy/MM/dd hh:mm")}\r\nログが{logUpdateInterval}分以上書き込まれていないことを検出しました。```{logs}```";
-        }
-
-        private string GetWarningNotificationMsg()
+        private string GetWarningNotificationMsg(int duration = 0)
         {
             string logs = GetLastLogs();
             return $"*【警告】*{DateTime.Now.ToString("yyyy/MM/dd hh:mm")}\r\n*" +
-                    $"ログが{2 * logUpdateInterval}分以上書き込まれていない*ことを検出しました。\r\n" +
-                    $"RPAが停止している可能性があります。```{logs}```";
+                    $"ログが{duration}分間書き込まれていない*ことを検出しました。\r\n" +
+                    $"・BIツールにアクセスし、社内用の各ワークスペースの「データセット」更新時間を確認ください。" +
+                    $"・BIツール更新が直近10分以内で更新されていない場合（10分以上更新が停止している場合）は、ロボパット2号機を再稼働ください。" +
+                    $"```{logs}```";
         }
 
         public void SendTest(string msg)
