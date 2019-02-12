@@ -12,6 +12,8 @@ namespace RpaNotificator
 {
     class RpaChecker
     {
+        private static string LOG_REGEX = @"^(\d{4}/\d{2}/\d{2} \d{6}) 読込csv破損：(\d+?)\..*? - BIエラー画面表示：(\d+?)\..*?$";
+
         private Form1 form1;
         private string logFileDir;
         private string _logFileName;
@@ -33,6 +35,7 @@ namespace RpaNotificator
         private int logUpdateInterval;
 
         private bool fileNotFound = false;
+        private bool isFailed = false;
         public static int traialsCount = 0;
         public static int errorsCount = 0;
         public static int missingsCount = 0;
@@ -58,94 +61,83 @@ namespace RpaNotificator
             // ファイルがなかった場合の処理は後で書く
             if (!File.Exists(filePath))
                 return;
-
-            ///
-            /// 更新日時の比較
-            ///
-            // 更新日時の取得
+            
             DateTime lastUpdatedTime = File.GetLastWriteTime(filePath);
-            // n（ログエラー判定間隔）分前の日時
             DateTime nMinutesAgo = DateTime.Now.AddMinutes(-this.logUpdateInterval);
-            // 2n分前の日時
-            DateTime twoNMinutesAgo = DateTime.Now.AddMinutes(-2 * this.logUpdateInterval);
 
-            // n: RPAの更新間隔（min）
-            // 最終更新から n 分以上経過している場合
-            if (lastUpdatedTime <= nMinutesAgo)
+            string logs = GetLastLogs(1);
+            bool hasError = false;
+
+            Match match = Regex.Match(logs, LOG_REGEX);
+            if (match.Success && match.Groups.Count > 2)
             {
-                missingsCount++;
-                // 最終更新から 2n 分以上経過している場合
-                if (lastUpdatedTime <= twoNMinutesAgo)
+                for (int i = 2; i < match.Groups.Count; i++)
                 {
-                    form1.AddLogFromAnotherThread($"【警告】{logUpdateInterval}分以上ログが書き込まれていません");
-                    if (errorReport)
+                    if (match.Groups[i].Value != "0")
                     {
-                        string msg = GetWarningNotificationMsg();
-                        SendNotification(msg);
-                    }
-                }
-                else
-                {
-                    form1.AddLogFromAnotherThread($"【警告】{logUpdateInterval}分以上ログが書き込まれていません");
-                    if (errorReport)
-                    {
-                        string msg = GetCautionNotificationMsg();
-                        SendNotification(msg);
+                        hasError = true;
+                        break;
                     }
                 }
             }
             else
             {
-                string logs = GetLastLogs(1);
-                Match match = Regex.Match(logs, @"\d{14}…エラー画面：(\d).0回閉じて、次へスキップ");
+                hasError = true;
+            }
 
-                if (!match.Success || match.Groups.Count < 2 || match.Groups[1].Value != "0")
+
+            if (hasError)
+            {
+                form1.AddLogFromAnotherThread("【エラー】書き込まれたログからエラーを検知しました");
+                errorsCount++;
+                isFailed = true;
+                if (errorReport)
                 {
-                    form1.AddLogFromAnotherThread("【エラー】書き込まれたログからエラーを検知しました");
-                    errorsCount++;
+                    MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
+                    SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
+                }
+            }
+            else
+            {
+                if (lastUpdatedTime <= nMinutesAgo)
+                {
+                    missingsCount++;
+                    isFailed = true;
+
+                    int diffMinutes = DiffTimesAsMinutes(lastUpdatedTime, nMinutesAgo);
+
+                    form1.AddLogFromAnotherThread($"【警告】{diffMinutes}分間ログが書き込まれていません");
                     if (errorReport)
                     {
-                        string msg = GetErrorNotificationMsg();
-                        SendNotification(msg);
+                        MessageBuilder mb = new MessageBuilder(diffMinutes, GetLastLogs(3));
+                        SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.MISSING));
                     }
                 }
                 else
                 {
                     form1.AddLogFromAnotherThread("【正常】ログを確認しました");
-                    if (normalReport)
+                    if (isFailed)
                     {
-                        string msg = GetSuccessNotificationMsg();
-                        SendNotification(msg);
+                        isFailed = false;
+                        MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
+                        SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.RESTORING));
+                    }
+                    else
+                    {
+                        if (normalReport)
+                        {
+                            MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
+                            SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
+                        }
                     }
                 }
-            }
+            }            
         }
 
-        private string GetSuccessNotificationMsg()
+        private int DiffTimesAsMinutes(DateTime beforeTime, DateTime afterTime)
         {
-            return $"{DateTime.Now.ToString("yyyy/MM/dd hh:mm")} ロボパットの正常稼働を確認しました。";
-        }
-
-        private string GetErrorNotificationMsg()
-        {
-            string logs = GetLastLogs(1);
-            return $"【エラー】{DateTime.Now.ToString("yyyy/MM/dd hh:mm")}\r\n" +
-                    "エラーを検知しました。" +
-                    $"```{logs}```";
-        }
-
-        private string GetCautionNotificationMsg()
-        {
-            string logs = GetLastLogs();
-            return $"【注意】{DateTime.Now.ToString("yyyy/MM/dd hh:mm")}\r\nログが{logUpdateInterval}分以上書き込まれていないことを検出しました。```{logs}```";
-        }
-
-        private string GetWarningNotificationMsg()
-        {
-            string logs = GetLastLogs();
-            return $"*【警告】*{DateTime.Now.ToString("yyyy/MM/dd hh:mm")}\r\n*" +
-                    $"ログが{2 * logUpdateInterval}分以上書き込まれていない*ことを検出しました。\r\n" +
-                    $"RPAが停止している可能性があります。```{logs}```";
+            TimeSpan diff = afterTime - beforeTime;
+            return (int)diff.TotalMinutes;
         }
 
         public void SendTest(string msg)
@@ -174,20 +166,21 @@ namespace RpaNotificator
                     {
                         while (sr.Peek() >= 0)
                         {
-                            // ファイルを 1 行ずつ読み込む
                             string stBuffer = sr.ReadLine();
+                            
+                            Match match = Regex.Match(stBuffer, LOG_REGEX);
 
-                            // 正規表現で時間抜き出し
-                            Match match = Regex.Match(stBuffer, @"\d{4}\d{2}\d{2}\d{2}(\d{2})(\d{2})…エラー画面：(\d).0回閉じて、次へスキップ");
-
-                            if (match.Success && match.Groups.Count == 4 || match.Groups[3].Value == "0")
+                            if (match.Success && match.Groups.Count == 4)
                             {
                                 var t = match.Groups;
                                 try
                                 {
-                                    // 差分時間の取り出し
-                                    int _min = int.Parse(t[1].Value);
-                                    int _sec = int.Parse(t[2].Value);
+                                    DateTime dt = DateTime.ParseExact(t[1].Value,
+                                                    "yyyy/MM/dd HHmmss",
+                                                    System.Globalization.DateTimeFormatInfo.InvariantInfo,
+                                                    System.Globalization.DateTimeStyles.None);
+                                    int _min = dt.Minute;
+                                    int _sec = dt.Second;
                                     int _min1Digit = (_min - (int)(_min / 10) * 10);
                                     int minDiff = 0;
 
@@ -216,15 +209,15 @@ namespace RpaNotificator
 
                 if (rate >= 0.975)
                 {
-                    rateMsg = $"🎉🎉本日の稼働率は{rate * 100}%でした🎉🎉";
+                    rateMsg = $"🎉🎉本日の稼働率は{(rate * 100):F1}%でした🎉🎉";
                 }
                 else if (rate > 0.8)
                 {
-                    rateMsg = $"😑😑本日の稼働率は{rate * 100}%でした😑😑";
+                    rateMsg = $"😑😑本日の稼働率は{(rate * 100):F1}%でした😑😑";
                 }
                 else if (rate > 0.6)
                 {
-                    rateMsg = $"🤕😷本日の稼働率は{rate * 100}%でした😷🤕";
+                    rateMsg = $"🤕😷本日の稼働率は{(rate * 100):F1}%でした😷🤕";
                 }
                 else
                 {
@@ -235,8 +228,7 @@ namespace RpaNotificator
                        $"エラー検出：{errorsCount}\r\n" +
                        $"ログ未取得：{missingsCount}\r\n\r\n" +
                        $"平均処理時間：{SecondsToMinutes((int)processTimesSec.Average())}\r\n" +
-                       $"最長処理時間：{SecondsToMinutes(processTimesSec.Max())}\r\n" +
-                       $"最短処理時間：{SecondsToMinutes(processTimesSec.Min())}\r\n\r\n" +
+                       $"Max：{SecondsToMinutes(processTimesSec.Max())}　Min：{SecondsToMinutes(processTimesSec.Min())}\r\n" +
                        rateMsg;
             }
             SendNotification(msg);

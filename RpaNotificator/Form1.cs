@@ -129,9 +129,6 @@ namespace RpaNotificator
                 rpaChecker = new RpaChecker(this, textBoxLogDir.Text, textBoxLogFile.Text, textBoxWebhook.Text,
                                             checkBoxNormalReport.Checked, checkBoxErrorReport.Checked,
                                             decimal.ToInt32(numericUpDownRefreshInterval.Value), decimal.ToInt32(numericUpDownLogUpdateInterval.Value));
-
-                RpaChecker.traialsCount = 100;
-                RpaChecker.errorsCount = 1;
                 
 #pragma warning disable CS4014 // この呼び出しを待たないため、現在のメソッドの実行は、呼び出しが完了する前に続行します
                 Task.Run(async() =>
