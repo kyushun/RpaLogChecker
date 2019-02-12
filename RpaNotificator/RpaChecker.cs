@@ -28,12 +28,12 @@ namespace RpaNotificator
                 this._logFileName = value;
             }
         }
-        private string webhookUrl;
         private bool normalReport;
         private bool errorReport;
         private int refreshInterval;
         private int logUpdateInterval;
 
+        private Notificator.HangoutsChat chat;
         private bool fileNotFound = false;
         private bool isFailed = false;
         public static int traialsCount = 0;
@@ -45,11 +45,12 @@ namespace RpaNotificator
             this.form1 = form1;
             this.logFileDir = logFileDir;
             this.logFileName = logFileName;
-            this.webhookUrl = webhookUrl;
             this.normalReport = normalReport;
             this.errorReport = errorReport;
             this.refreshInterval = refreshInterval;
             this.logUpdateInterval = logUpdateInterval;
+
+            chat = new Notificator.HangoutsChat(webhookUrl);
         }
 
         public async void Run()
@@ -94,7 +95,7 @@ namespace RpaNotificator
                 if (errorReport)
                 {
                     MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
-                    SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
+                    chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
                 }
             }
             else
@@ -110,7 +111,7 @@ namespace RpaNotificator
                     if (errorReport)
                     {
                         MessageBuilder mb = new MessageBuilder(diffMinutes, GetLastLogs(3));
-                        SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.MISSING));
+                        chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.MISSING));
                     }
                 }
                 else
@@ -120,14 +121,14 @@ namespace RpaNotificator
                     {
                         isFailed = false;
                         MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
-                        SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.RESTORING));
+                        chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.RESTORING));
                     }
                     else
                     {
                         if (normalReport)
                         {
                             MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
-                            SendNotification(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
+                            chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
                         }
                     }
                 }
@@ -138,11 +139,6 @@ namespace RpaNotificator
         {
             TimeSpan diff = afterTime - beforeTime;
             return (int)diff.TotalMinutes;
-        }
-
-        public void SendTest(string msg)
-        {
-            SendNotification(msg);
         }
 
         public void SendFinalReport()
@@ -231,7 +227,7 @@ namespace RpaNotificator
                        $"Max：{SecondsToMinutes(processTimesSec.Max())}　Min：{SecondsToMinutes(processTimesSec.Min())}\r\n" +
                        rateMsg;
             }
-            SendNotification(msg);
+            chat.Send(msg);
             ResetCount();
         }
 
@@ -315,25 +311,6 @@ namespace RpaNotificator
                     return sr.ReadToEnd();
                 }
             }
-        }
-
-        // Slack に Incoming WebHooks で投稿する
-        // https://webbibouroku.com/Blog/Article/slack-incoming-webhooks
-        private void SendNotification(string msg)
-        {
-            // ポストするデータをJSON形式で作成
-            var data = JsonConvert.SerializeObject(new
-            {
-                text = msg
-            });
-
-            // クライアントを設定
-            var webClient = new WebClient();
-            webClient.Headers.Add(HttpRequestHeader.ContentType, "application/json;charset=UTF-8");
-            webClient.Encoding = Encoding.UTF8;
-
-            // Webhook URL にデータをアップロード
-            webClient.UploadString(this.webhookUrl, data);
         }
     }
 }
