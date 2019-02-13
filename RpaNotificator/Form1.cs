@@ -63,23 +63,19 @@ namespace RpaNotificator
             listView1.Columns.Add("ログ", -2, HorizontalAlignment.Left);
             AddLog("プログラム起動");
         }
-
-        int test (int a)
+        
+        private void Form1_Load(object sender, EventArgs e)
         {
-            int _min = a;
-            int _min1Digit = (_min - (int)(_min / 10) * 10);
-            int minBase = 0;
-
-            if (_min1Digit >= 5)
+            if (Program.args.HasSwitch("-a") || Program.args.HasSwitch("--autostart"))
             {
-                minBase = _min - (_min1Digit - 5);
+                if (!isRunning)
+                    this.buttonRun.PerformClick();
             }
-            else
+            if (Program.args.HasSwitch("-r") || Program.args.HasSwitch("--restarted"))
             {
-                minBase = _min - _min1Digit;
+                Notificator.HangoutsChat chat = new Notificator.HangoutsChat(this.textBoxWebhook.Text);
+                chat.Send("<users/117741206170956514704> RPA動作チェッカーの自動再起動が完了しました。");
             }
-
-            return minBase;
         }
 
         public void AddLog(string msg)

@@ -225,6 +225,7 @@
             this.Controls.Add(this.groupBox1);
             this.Name = "Form1";
             this.Text = "RPA 動作チェッカー";
+            this.Load += new System.EventHandler(this.Form1_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownLogUpdateInterval)).EndInit();
