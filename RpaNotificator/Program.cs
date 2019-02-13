@@ -18,19 +18,31 @@ namespace RpaNotificator
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            Program.args = new ArgumentMap();
+            Program.args.Init(args);
+
             try
             {
-                Program.args = new ArgumentMap();
-                Program.args.Init(args);
-                
                 Application.Run(new Form1());
             }
             catch(Exception ex)
             {
-                Notificator.HangoutsChat chat = new Notificator.HangoutsChat(GetConfigValue("WebhookUrl"));
-                MessageBuilder mb = new MessageBuilder(0, ex.ToString());
-                chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.APPLICATION_ERROR));
-                Restart();
+                int count = int.Parse(Program.args.GetOption("-r", "0"));
+                if (count < 3)
+                {
+                    Notificator.HangoutsChat chat = new Notificator.HangoutsChat(GetConfigValue("WebhookUrl"));
+                    MessageBuilder mb = new MessageBuilder(0, ex.ToString());
+                    chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.APPLICATION_ERROR));
+                    System.Threading.Thread.Sleep(3000);
+                    Restart(++count);
+                }
+                else
+                {
+                    Notificator.HangoutsChat chat = new Notificator.HangoutsChat(GetConfigValue("WebhookUrl"));
+                    MessageBuilder mb = new MessageBuilder(0, ex.ToString());
+                    chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.APPLICATION_RESTARTING_MISSED));
+                }
             }
         }
 
@@ -39,11 +51,11 @@ namespace RpaNotificator
             return System.Configuration.ConfigurationManager.AppSettings[key] ?? defaultValue;
         }
 
-        public static void Restart()
+        public static void Restart(int count)
         {
             ProcessStartInfo startInfo = Process.GetCurrentProcess().StartInfo;
             startInfo.FileName = Application.ExecutablePath;
-            startInfo.Arguments = " -a -r";
+            startInfo.Arguments = " -a -r " + count;
             Process.Start(startInfo);
 
             var exit = typeof(Application).GetMethod("ExitInternal",

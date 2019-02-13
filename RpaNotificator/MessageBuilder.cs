@@ -24,7 +24,8 @@ namespace RpaNotificator
             ERROR,
             RESTORING,
             APPLICATION_ERROR,
-            APPLICATION_RESTARTED
+            APPLICATION_RESTARTED,
+            APPLICATION_RESTARTING_MISSED
         }
 
         public MessageBuilder(int errorDuration = 0, string log = "")
