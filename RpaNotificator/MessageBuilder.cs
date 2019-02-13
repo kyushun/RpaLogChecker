@@ -68,7 +68,12 @@ namespace RpaNotificator
 
                         if (foundStartLine)
                         {
-                            if (line.Equals(CONFIG_END_LINE)) break;
+                            if (line.Equals(CONFIG_END_LINE))
+                            {
+                                var re = new System.Text.RegularExpressions.Regex("[\\r\\n]+$");
+                                message = re.Replace(message, "", 1);
+                                break;
+                            }
 
                             message += line + Environment.NewLine;
                         }
