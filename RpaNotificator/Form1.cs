@@ -21,25 +21,10 @@ namespace RpaNotificator
 
         public Form1()
         {
-            try
-            {
-                appConfig = new AppConfig();
-            }
-            catch(System.Configuration.SettingsPropertyNotFoundException ex)
-            {
-                MessageBox.Show("設定ファイルが見つかりませんでした。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                this.Close();
-            }
             InitializeComponent();
 
             // 設定ファイル読み込み
-            this.textBoxLogDir.Text = appConfig.LogFileDirectory;
-            this.textBoxLogFile.Text = appConfig.LogFileName;
-            this.textBoxWebhook.Text = appConfig.WebhookUrl;
-            this.checkBoxNormalReport.Checked = appConfig.ReportNormalLog;
-            this.checkBoxErrorReport.Checked = appConfig.ReportErrorLog;
-            this.numericUpDownRefreshInterval.Value = appConfig.RefreshInterval;
-            this.numericUpDownLogUpdateInterval.Value = appConfig.LogUpdateInterval;
+            OpenConfiguration();
 
             //フォームの最大化ボタンの表示、非表示を切り替える
             this.MaximizeBox = !this.MaximizeBox;
@@ -94,26 +79,7 @@ namespace RpaNotificator
 
         private void buttonSaveConfig_Click(object sender, EventArgs e)
         {
-            DialogResult result = MessageBox.Show("設定を保存してもよろしいですか？",
-                                                    "確認",
-                                                    MessageBoxButtons.YesNo,
-                                                    MessageBoxIcon.Question);
-            if (result != DialogResult.Yes)
-            {
-                return;
-            }
-
-            appConfig.LogFileDirectory = textBoxLogDir.Text;
-            appConfig.LogFileName = textBoxLogFile.Text;
-            appConfig.WebhookUrl = textBoxWebhook.Text;
-            appConfig.ReportNormalLog = checkBoxNormalReport.Checked;
-            appConfig.ReportErrorLog = checkBoxErrorReport.Checked;
-            appConfig.RefreshInterval = decimal.ToInt32(numericUpDownRefreshInterval.Value);
-            appConfig.LogUpdateInterval = decimal.ToInt32(numericUpDownLogUpdateInterval.Value);
-
-            appConfig.Save();
-
-            MessageBox.Show("設定を保存しました。", "確認", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            SaveConfiguration();
         }
 
         private void buttonRun_Click(object sender, EventArgs e)
@@ -147,6 +113,84 @@ namespace RpaNotificator
                 buttonRun.Text = "実行";
                 buttonSaveConfig.Enabled = true;
             }
+        }
+
+        private void OpenConfiguration(bool reopen = false)
+        {
+            if (reopen)
+            {
+                DialogResult result = MessageBox.Show("設定を再読込みします。\r\n保存していない設定は破棄されますがよろしいですか？",
+                                                    "確認",
+                                                    MessageBoxButtons.YesNo,
+                                                    MessageBoxIcon.Question);
+                if (result != DialogResult.Yes)
+                    return;
+            }
+
+            try
+            {
+                appConfig = new AppConfig();
+            }
+            catch (System.Configuration.SettingsPropertyNotFoundException ex)
+            {
+                MessageBox.Show("設定ファイルが見つかりませんでした。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close();
+            }
+
+            this.textBoxLogDir.Text = appConfig.LogFileDirectory;
+            this.textBoxLogFile.Text = appConfig.LogFileName;
+            this.textBoxWebhook.Text = appConfig.WebhookUrl;
+            this.checkBoxNormalReport.Checked = appConfig.ReportNormalLog;
+            this.checkBoxErrorReport.Checked = appConfig.ReportErrorLog;
+            this.numericUpDownRefreshInterval.Value = appConfig.RefreshInterval;
+            this.numericUpDownLogUpdateInterval.Value = appConfig.LogUpdateInterval;
+
+            if (reopen)
+                MessageBox.Show("設定を再読込しました。", "確認", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void SaveConfiguration()
+        {
+            DialogResult result = MessageBox.Show("設定を保存してもよろしいですか？",
+                                                    "確認",
+                                                    MessageBoxButtons.YesNo,
+                                                    MessageBoxIcon.Question);
+            if (result != DialogResult.Yes)
+                return;
+
+            appConfig.LogFileDirectory = textBoxLogDir.Text;
+            appConfig.LogFileName = textBoxLogFile.Text;
+            appConfig.WebhookUrl = textBoxWebhook.Text;
+            appConfig.ReportNormalLog = checkBoxNormalReport.Checked;
+            appConfig.ReportErrorLog = checkBoxErrorReport.Checked;
+            appConfig.RefreshInterval = decimal.ToInt32(numericUpDownRefreshInterval.Value);
+            appConfig.LogUpdateInterval = decimal.ToInt32(numericUpDownLogUpdateInterval.Value);
+
+            appConfig.Save();
+
+            MessageBox.Show("設定を保存しました。", "確認", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenConfiguration(true);
+        }
+
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            SaveConfiguration();
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            System.Reflection.Assembly asm = System.Reflection.Assembly.GetExecutingAssembly();
+            
+            MessageBox.Show(asm.GetName().Name + "\r\nv" + asm.GetName().Version + "", "About");
         }
     }
 }
