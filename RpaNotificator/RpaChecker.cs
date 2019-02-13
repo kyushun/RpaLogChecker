@@ -34,8 +34,21 @@ namespace RpaNotificator
         private int logUpdateInterval;
 
         private Notificator.HangoutsChat chat;
-        private bool fileNotFound = false;
-        private bool isFailed = false;
+        private enum RPA_STATUS
+        {
+            SUCCESS,
+            MISSING,
+            ERROR
+        }
+        private RPA_STATUS status = RPA_STATUS.SUCCESS;
+        private bool IsFailed
+        {
+            get { return (status != RPA_STATUS.SUCCESS); }
+        }
+        private bool IsStatusChanged(RPA_STATUS newStatus)
+        {
+            return (status != newStatus);
+        }
         public static int traialsCount = 0;
         public static int errorsCount = 0;
         public static int missingsCount = 0;
@@ -91,46 +104,53 @@ namespace RpaNotificator
             {
                 form1.AddLogFromAnotherThread("【エラー】書き込まれたログからエラーを検知しました");
                 errorsCount++;
-                isFailed = true;
-                if (errorReport)
+                RPA_STATUS newStatus = RPA_STATUS.ERROR;
+
+                if (errorReport && IsStatusChanged(newStatus))
                 {
                     MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
-                    chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
+                    chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.ERROR), !IsFailed);
                 }
+                status = newStatus;
             }
             else
             {
                 if (lastUpdatedTime <= nMinutesAgo)
                 {
                     missingsCount++;
-                    isFailed = true;
+                    RPA_STATUS newStatus = RPA_STATUS.MISSING;
 
                     int diffMinutes = DiffTimesAsMinutes(lastUpdatedTime, nMinutesAgo);
 
                     form1.AddLogFromAnotherThread($"【警告】{diffMinutes}分間ログが書き込まれていません");
-                    if (errorReport)
+                    if (errorReport && IsStatusChanged(newStatus))
                     {
                         MessageBuilder mb = new MessageBuilder(diffMinutes, GetLastLogs(3));
-                        chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.MISSING));
+                        chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.MISSING), !IsFailed);
                     }
+                    status = newStatus;
                 }
                 else
                 {
-                    form1.AddLogFromAnotherThread("【正常】ログを確認しました");
-                    if (isFailed)
+                    if (IsFailed)
                     {
-                        isFailed = false;
-                        MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
-                        chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.RESTORING));
+                        form1.AddLogFromAnotherThread("【復旧】復旧を確認しました");
+                        if (errorReport)
+                        {
+                            MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
+                            chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.RESTORING), false);
+                        }
                     }
                     else
                     {
+                        form1.AddLogFromAnotherThread("【正常】ログを確認しました");
                         if (normalReport)
                         {
                             MessageBuilder mb = new MessageBuilder(0, GetLastLogs(3));
-                            chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.ERROR));
+                            chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.SUCCESS));
                         }
                     }
+                    status = RPA_STATUS.SUCCESS;
                 }
             }            
         }
