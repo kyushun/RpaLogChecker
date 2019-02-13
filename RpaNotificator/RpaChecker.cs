@@ -224,7 +224,7 @@ namespace RpaNotificator
                        $"エラー検出：{errorsCount}\r\n" +
                        $"ログ未取得：{missingsCount}\r\n\r\n" +
                        $"平均処理時間：{SecondsToMinutes((int)processTimesSec.Average())}\r\n" +
-                       $"Max：{SecondsToMinutes(processTimesSec.Max())}　Min：{SecondsToMinutes(processTimesSec.Min())}\r\n" +
+                       $"（Max：{SecondsToMinutes(processTimesSec.Max())}　Min：{SecondsToMinutes(processTimesSec.Min())}）\r\n\r\n" +
                        rateMsg;
             }
             chat.Send(msg);
