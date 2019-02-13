@@ -22,7 +22,9 @@ namespace RpaNotificator
             SUCCESS,
             MISSING,
             ERROR,
-            RESTORING
+            RESTORING,
+            APPLICATION_ERROR,
+            APPLICATION_RESTARTED
         }
 
         public MessageBuilder(int errorDuration = 0, string log = "")

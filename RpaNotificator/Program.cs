@@ -28,7 +28,8 @@ namespace RpaNotificator
             catch(Exception ex)
             {
                 Notificator.HangoutsChat chat = new Notificator.HangoutsChat(GetConfigValue("WebhookUrl"));
-                chat.Send("<users/117741206170956514704> RPA動作チェッカーがエラーを発生しました\r\n\r\n" + ex.ToString());
+                MessageBuilder mb = new MessageBuilder(0, ex.ToString());
+                chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.APPLICATION_ERROR));
                 Restart();
             }
         }

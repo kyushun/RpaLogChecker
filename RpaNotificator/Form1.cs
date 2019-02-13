@@ -74,7 +74,8 @@ namespace RpaNotificator
             if (Program.args.HasSwitch("-r") || Program.args.HasSwitch("--restarted"))
             {
                 Notificator.HangoutsChat chat = new Notificator.HangoutsChat(this.textBoxWebhook.Text);
-                chat.Send("<users/117741206170956514704> RPA動作チェッカーの自動再起動が完了しました。");
+                MessageBuilder mb = new MessageBuilder();
+                chat.Send(mb.GetMessage(MessageBuilder.ReportLevel.APPLICATION_RESTARTED));
             }
         }
 
