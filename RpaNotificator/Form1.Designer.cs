@@ -51,6 +51,14 @@
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.listViewIntervalList = new System.Windows.Forms.ListView();
+            this.dateTimePickerStartTime = new System.Windows.Forms.DateTimePicker();
+            this.dateTimePickerEndTime = new System.Windows.Forms.DateTimePicker();
+            this.label6 = new System.Windows.Forms.Label();
+            this.label7 = new System.Windows.Forms.Label();
+            this.buttonAddToIntervalList = new System.Windows.Forms.Button();
+            this.buttonDeleteFromIntervalList = new System.Windows.Forms.Button();
+            this.buttonUpdateToIntervalList = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownLogUpdateInterval)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownRefreshInterval)).BeginInit();
@@ -59,6 +67,14 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.buttonUpdateToIntervalList);
+            this.groupBox1.Controls.Add(this.buttonDeleteFromIntervalList);
+            this.groupBox1.Controls.Add(this.buttonAddToIntervalList);
+            this.groupBox1.Controls.Add(this.label7);
+            this.groupBox1.Controls.Add(this.label6);
+            this.groupBox1.Controls.Add(this.dateTimePickerEndTime);
+            this.groupBox1.Controls.Add(this.dateTimePickerStartTime);
+            this.groupBox1.Controls.Add(this.listViewIntervalList);
             this.groupBox1.Controls.Add(this.label5);
             this.groupBox1.Controls.Add(this.textBoxLogFile);
             this.groupBox1.Controls.Add(this.numericUpDownLogUpdateInterval);
@@ -74,7 +90,7 @@
             this.groupBox1.Font = new System.Drawing.Font("Meiryo UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
             this.groupBox1.Location = new System.Drawing.Point(12, 31);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(611, 148);
+            this.groupBox1.Size = new System.Drawing.Size(611, 320);
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "設定";
@@ -100,16 +116,16 @@
             // numericUpDownLogUpdateInterval
             // 
             this.numericUpDownLogUpdateInterval.Font = new System.Drawing.Font("Meiryo UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.numericUpDownLogUpdateInterval.Location = new System.Drawing.Point(487, 108);
+            this.numericUpDownLogUpdateInterval.Location = new System.Drawing.Point(481, 206);
             this.numericUpDownLogUpdateInterval.Name = "numericUpDownLogUpdateInterval";
-            this.numericUpDownLogUpdateInterval.Size = new System.Drawing.Size(84, 23);
+            this.numericUpDownLogUpdateInterval.Size = new System.Drawing.Size(123, 23);
             this.numericUpDownLogUpdateInterval.TabIndex = 10;
             // 
             // label4
             // 
             this.label4.AutoSize = true;
             this.label4.Font = new System.Drawing.Font("Meiryo UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.label4.Location = new System.Drawing.Point(372, 111);
+            this.label4.Location = new System.Drawing.Point(366, 210);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(118, 15);
             this.label4.TabIndex = 9;
@@ -118,16 +134,16 @@
             // numericUpDownRefreshInterval
             // 
             this.numericUpDownRefreshInterval.Font = new System.Drawing.Font("Meiryo UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.numericUpDownRefreshInterval.Location = new System.Drawing.Point(273, 108);
+            this.numericUpDownRefreshInterval.Location = new System.Drawing.Point(481, 177);
             this.numericUpDownRefreshInterval.Name = "numericUpDownRefreshInterval";
-            this.numericUpDownRefreshInterval.Size = new System.Drawing.Size(84, 23);
+            this.numericUpDownRefreshInterval.Size = new System.Drawing.Size(123, 23);
             this.numericUpDownRefreshInterval.TabIndex = 8;
             // 
             // label3
             // 
             this.label3.AutoSize = true;
             this.label3.Font = new System.Drawing.Font("Meiryo UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.label3.Location = new System.Drawing.Point(167, 111);
+            this.label3.Location = new System.Drawing.Point(366, 181);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(109, 15);
             this.label3.TabIndex = 7;
@@ -137,7 +153,7 @@
             // 
             this.checkBoxErrorReport.AutoSize = true;
             this.checkBoxErrorReport.Font = new System.Drawing.Font("Meiryo UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.checkBoxErrorReport.Location = new System.Drawing.Point(84, 110);
+            this.checkBoxErrorReport.Location = new System.Drawing.Point(447, 237);
             this.checkBoxErrorReport.Name = "checkBoxErrorReport";
             this.checkBoxErrorReport.Size = new System.Drawing.Size(77, 19);
             this.checkBoxErrorReport.TabIndex = 6;
@@ -148,7 +164,7 @@
             // 
             this.checkBoxNormalReport.AutoSize = true;
             this.checkBoxNormalReport.Font = new System.Drawing.Font("Meiryo UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.checkBoxNormalReport.Location = new System.Drawing.Point(6, 110);
+            this.checkBoxNormalReport.Location = new System.Drawing.Point(369, 237);
             this.checkBoxNormalReport.Name = "checkBoxNormalReport";
             this.checkBoxNormalReport.Size = new System.Drawing.Size(74, 19);
             this.checkBoxNormalReport.TabIndex = 5;
@@ -194,7 +210,7 @@
             // buttonSaveConfig
             // 
             this.buttonSaveConfig.Font = new System.Drawing.Font("Meiryo UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.buttonSaveConfig.Location = new System.Drawing.Point(381, 381);
+            this.buttonSaveConfig.Location = new System.Drawing.Point(381, 553);
             this.buttonSaveConfig.Name = "buttonSaveConfig";
             this.buttonSaveConfig.Size = new System.Drawing.Size(121, 32);
             this.buttonSaveConfig.TabIndex = 1;
@@ -205,7 +221,7 @@
             // buttonRun
             // 
             this.buttonRun.Font = new System.Drawing.Font("Meiryo UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.buttonRun.Location = new System.Drawing.Point(508, 381);
+            this.buttonRun.Location = new System.Drawing.Point(508, 553);
             this.buttonRun.Name = "buttonRun";
             this.buttonRun.Size = new System.Drawing.Size(121, 32);
             this.buttonRun.TabIndex = 2;
@@ -215,7 +231,7 @@
             // 
             // listView1
             // 
-            this.listView1.Location = new System.Drawing.Point(12, 185);
+            this.listView1.Location = new System.Drawing.Point(12, 357);
             this.listView1.Name = "listView1";
             this.listView1.Size = new System.Drawing.Size(611, 190);
             this.listView1.TabIndex = 3;
@@ -275,15 +291,96 @@
             // aboutToolStripMenuItem
             // 
             this.aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
-            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.aboutToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
             this.aboutToolStripMenuItem.Text = "About";
             this.aboutToolStripMenuItem.Click += new System.EventHandler(this.aboutToolStripMenuItem_Click);
+            // 
+            // listViewIntervalList
+            // 
+            this.listViewIntervalList.FullRowSelect = true;
+            this.listViewIntervalList.Location = new System.Drawing.Point(6, 107);
+            this.listViewIntervalList.Name = "listViewIntervalList";
+            this.listViewIntervalList.Size = new System.Drawing.Size(344, 200);
+            this.listViewIntervalList.TabIndex = 5;
+            this.listViewIntervalList.UseCompatibleStateImageBehavior = false;
+            this.listViewIntervalList.View = System.Windows.Forms.View.Details;
+            this.listViewIntervalList.SelectedIndexChanged += new System.EventHandler(this.listViewIntervalList_SelectedIndexChanged);
+            // 
+            // dateTimePickerStartTime
+            // 
+            this.dateTimePickerStartTime.CustomFormat = "HH:mm";
+            this.dateTimePickerStartTime.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
+            this.dateTimePickerStartTime.Location = new System.Drawing.Point(481, 120);
+            this.dateTimePickerStartTime.Name = "dateTimePickerStartTime";
+            this.dateTimePickerStartTime.ShowUpDown = true;
+            this.dateTimePickerStartTime.Size = new System.Drawing.Size(123, 23);
+            this.dateTimePickerStartTime.TabIndex = 13;
+            // 
+            // dateTimePickerEndTime
+            // 
+            this.dateTimePickerEndTime.CustomFormat = "HH:mm";
+            this.dateTimePickerEndTime.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
+            this.dateTimePickerEndTime.Location = new System.Drawing.Point(481, 149);
+            this.dateTimePickerEndTime.Name = "dateTimePickerEndTime";
+            this.dateTimePickerEndTime.ShowUpDown = true;
+            this.dateTimePickerEndTime.Size = new System.Drawing.Size(123, 23);
+            this.dateTimePickerEndTime.TabIndex = 14;
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Font = new System.Drawing.Font("Meiryo UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.label6.Location = new System.Drawing.Point(366, 125);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(55, 15);
+            this.label6.TabIndex = 15;
+            this.label6.Text = "開始時間";
+            // 
+            // label7
+            // 
+            this.label7.AutoSize = true;
+            this.label7.Font = new System.Drawing.Font("Meiryo UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.label7.Location = new System.Drawing.Point(366, 154);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(55, 15);
+            this.label7.TabIndex = 16;
+            this.label7.Text = "終了時間";
+            // 
+            // buttonAddToIntervalList
+            // 
+            this.buttonAddToIntervalList.Location = new System.Drawing.Point(356, 270);
+            this.buttonAddToIntervalList.Name = "buttonAddToIntervalList";
+            this.buttonAddToIntervalList.Size = new System.Drawing.Size(80, 29);
+            this.buttonAddToIntervalList.TabIndex = 17;
+            this.buttonAddToIntervalList.Text = "追加";
+            this.buttonAddToIntervalList.UseVisualStyleBackColor = true;
+            this.buttonAddToIntervalList.Click += new System.EventHandler(this.buttonAddToIntervalList_Click);
+            // 
+            // buttonDeleteFromIntervalList
+            // 
+            this.buttonDeleteFromIntervalList.Location = new System.Drawing.Point(525, 270);
+            this.buttonDeleteFromIntervalList.Name = "buttonDeleteFromIntervalList";
+            this.buttonDeleteFromIntervalList.Size = new System.Drawing.Size(80, 29);
+            this.buttonDeleteFromIntervalList.TabIndex = 18;
+            this.buttonDeleteFromIntervalList.Text = "削除";
+            this.buttonDeleteFromIntervalList.UseVisualStyleBackColor = true;
+            this.buttonDeleteFromIntervalList.Click += new System.EventHandler(this.buttonDeleteFromIntervalList_Click);
+            // 
+            // buttonUpdateToIntervalList
+            // 
+            this.buttonUpdateToIntervalList.Location = new System.Drawing.Point(441, 270);
+            this.buttonUpdateToIntervalList.Name = "buttonUpdateToIntervalList";
+            this.buttonUpdateToIntervalList.Size = new System.Drawing.Size(80, 29);
+            this.buttonUpdateToIntervalList.TabIndex = 19;
+            this.buttonUpdateToIntervalList.Text = "更新";
+            this.buttonUpdateToIntervalList.UseVisualStyleBackColor = true;
+            this.buttonUpdateToIntervalList.Click += new System.EventHandler(this.buttonUpdateToIntervalList_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(635, 419);
+            this.ClientSize = new System.Drawing.Size(635, 595);
             this.Controls.Add(this.listView1);
             this.Controls.Add(this.buttonRun);
             this.Controls.Add(this.buttonSaveConfig);
@@ -329,6 +426,14 @@
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem openToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
+        private System.Windows.Forms.ListView listViewIntervalList;
+        private System.Windows.Forms.DateTimePicker dateTimePickerStartTime;
+        private System.Windows.Forms.Button buttonUpdateToIntervalList;
+        private System.Windows.Forms.Button buttonDeleteFromIntervalList;
+        private System.Windows.Forms.Button buttonAddToIntervalList;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.DateTimePicker dateTimePickerEndTime;
     }
 }
 

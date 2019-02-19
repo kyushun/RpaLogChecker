@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -47,6 +48,13 @@ namespace RpaNotificator
             listView1.Columns.Add("時間", -2, HorizontalAlignment.Left);
             listView1.Columns.Add("ログ", -2, HorizontalAlignment.Left);
             AddLog("プログラム起動");
+
+            listViewIntervalList.Columns.Add("開始", -2, HorizontalAlignment.Left);
+            listViewIntervalList.Columns.Add("終了", -2, HorizontalAlignment.Left);
+            listViewIntervalList.Columns.Add("ログ調査（分）", -2, HorizontalAlignment.Left);
+            listViewIntervalList.Columns.Add("エラー判定（分）", -2, HorizontalAlignment.Left);
+            listViewIntervalList.Columns.Add("正常報告", -2, HorizontalAlignment.Left);
+            listViewIntervalList.Columns.Add("エラー報告", -2, HorizontalAlignment.Left);
         }
         
         private void Form1_Load(object sender, EventArgs e)
@@ -191,6 +199,113 @@ namespace RpaNotificator
             System.Reflection.Assembly asm = System.Reflection.Assembly.GetExecutingAssembly();
             
             MessageBox.Show(asm.GetName().Name + "\r\nv" + asm.GetName().Version + "", "About");
+        }
+
+        private void buttonAddToIntervalList_Click(object sender, EventArgs e)
+        {
+            DateTime startTime = dateTimePickerStartTime.Value;
+            DateTime endTime = dateTimePickerEndTime.Value;
+            int _refreshInterval = decimal.ToInt32(numericUpDownRefreshInterval.Value);
+            int _logUpdateInterval = decimal.ToInt32(numericUpDownLogUpdateInterval.Value);
+
+            if (startTime >= endTime)
+            {
+                MessageBox.Show("開始時間は終了時間より前である必要があります。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            } else if (_refreshInterval <= 0 || _logUpdateInterval <= 0)
+            {
+                MessageBox.Show("ログ取得間隔とエラー判定間隔は1分以上である必要があります。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            string startTimeStr = dateTimePickerStartTime.Text;
+            string endTimeStr = dateTimePickerEndTime.Text;
+
+            string refreshInterval = numericUpDownRefreshInterval.Value.ToString();
+            string logUpdateInterval = numericUpDownLogUpdateInterval.Value.ToString();
+
+            listViewIntervalList.Items.Add(new ListViewItem(new string[] { startTimeStr, endTimeStr, refreshInterval, logUpdateInterval }));
+
+            listViewIntervalList.ListViewItemSorter = new ListViewItemComparer(0);
+        }
+
+
+        /// <summary>
+        /// ListViewの項目の並び替えに使用するクラス
+        /// </summary>
+        public class ListViewItemComparer : IComparer
+        {
+            private int _column;
+
+            /// <summary>
+            /// ListViewItemComparerクラスのコンストラクタ
+            /// </summary>
+            /// <param name="col">並び替える列番号</param>
+            public ListViewItemComparer(int col)
+            {
+                _column = col;
+            }
+
+            public int Compare(object x, object y)
+            {
+                ListViewItem itemx = (ListViewItem)x;
+                ListViewItem itemy = (ListViewItem)y;
+
+                DateTime.TryParse(itemx.SubItems[_column].Text, out DateTime _x);
+                DateTime.TryParse(itemy.SubItems[_column].Text, out DateTime _y);
+
+
+                return DateTime.Compare(_x, _y);
+            }
+        }
+
+        private void listViewIntervalList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (listViewIntervalList.SelectedItems.Count > 0)
+            {
+                SetIntervalConfigValue(listViewIntervalList.SelectedItems[0].Index);
+            }
+        }
+
+        private void SetIntervalConfigValue(int index)
+        {
+            if (index >= listViewIntervalList.Items.Count)
+            {
+                index = 0;
+            }
+
+            ListViewItem item = listViewIntervalList.SelectedItems[0];
+            DateTime.TryParse(item.SubItems[0].Text, out DateTime startTime);
+            DateTime.TryParse(item.SubItems[1].Text, out DateTime endTime);
+            int.TryParse(item.SubItems[2].Text, out int refreshInterval);
+            int.TryParse(item.SubItems[3].Text, out int logupdateInterval);
+            dateTimePickerStartTime.Value = startTime;
+            dateTimePickerEndTime.Value = endTime;
+            numericUpDownRefreshInterval.Value = refreshInterval;
+            numericUpDownLogUpdateInterval.Value = logupdateInterval;
+        }
+
+        private void buttonUpdateToIntervalList_Click(object sender, EventArgs e)
+        {
+            if (listViewIntervalList.SelectedItems.Count > 0)
+            {
+                ListViewItem selected = listViewIntervalList.SelectedItems[0];
+                selected.SubItems[0].Text = dateTimePickerStartTime.Text;
+                selected.SubItems[1].Text = dateTimePickerEndTime.Text;
+                selected.SubItems[2].Text = numericUpDownRefreshInterval.Value.ToString();
+                selected.SubItems[3].Text = numericUpDownLogUpdateInterval.Value.ToString();
+            }
+        }
+
+        private void buttonDeleteFromIntervalList_Click(object sender, EventArgs e)
+        {
+            if (listViewIntervalList.SelectedItems.Count > 0)
+            {
+                foreach (ListViewItem selected in listViewIntervalList.SelectedItems)
+                {
+                    listViewIntervalList.Items.Remove(selected);
+                }
+            }
         }
     }
 }
