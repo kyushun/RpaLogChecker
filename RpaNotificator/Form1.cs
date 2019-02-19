@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -18,7 +19,7 @@ namespace RpaNotificator
         private AppConfig appConfig;
         private RpaChecker rpaChecker;
         private bool isRunning = false;
-        private DateTime lastFinalReport = DateTime.Now.AddDays(-1);
+        private DateTime lastFinalReport = DateTime.Now;
 
         public Form1()
         {
@@ -59,6 +60,7 @@ namespace RpaNotificator
         
         private void Form1_Load(object sender, EventArgs e)
         {
+            this.ActiveControl = this.buttonRun;
             if (Program.args.HasSwitch("-a") || Program.args.HasSwitch("--autostart"))
             {
                 if (!isRunning)
@@ -97,30 +99,48 @@ namespace RpaNotificator
                 this.isRunning = true;
                 buttonRun.Text = "キャンセル";
                 buttonSaveConfig.Enabled = false;
-                rpaChecker = new RpaChecker(this, textBoxLogDir.Text, textBoxLogFile.Text, textBoxWebhook.Text,
-                                            checkBoxNormalReport.Checked, checkBoxErrorReport.Checked,
-                                            decimal.ToInt32(numericUpDownRefreshInterval.Value), decimal.ToInt32(numericUpDownLogUpdateInterval.Value));
                 
-#pragma warning disable CS4014 // この呼び出しを待たないため、現在のメソッドの実行は、呼び出しが完了する前に続行します
+                #pragma warning disable CS4014
                 Task.Run(async() =>
                 {
                     while (true)
                     {
                         if (!this.isRunning) break;
 
-                        Task.Run(() => rpaChecker.Run());
-                        
-                        await Task.Delay((decimal.ToInt32(numericUpDownRefreshInterval.Value) * 60 * 1000));
+                        AppConfig.TimeSchedule active = CurrentlyActiveSchedule();
+                        if (active != null)
+                        {
+                            rpaChecker = new RpaChecker(this, appConfig.LogFileDirectory, appConfig.LogFileName, appConfig.WebhookUrl,
+                                                        active.SuccessReport, active.ErrorReport,  active.ErrorJudgementInterval);
+                            Task.Run(() => rpaChecker.Run());
+                            await Task.Delay(active.RefreshInterval * 60 * 1000);
+                        }
+                        else
+                            await Task.Delay(1000);
                     }
                 });
-#pragma warning restore CS4014 // この呼び出しを待たないため、現在のメソッドの実行は、呼び出しが完了する前に続行します
+                #pragma warning restore CS4014
             }
             else
             {
                 this.isRunning = false;
                 buttonRun.Text = "実行";
                 buttonSaveConfig.Enabled = true;
+                rpaChecker.ResetCount();
             }
+        }
+
+        private AppConfig.TimeSchedule CurrentlyActiveSchedule()
+        {
+            DateTime now = DateTime.Now;
+            foreach (AppConfig.TimeSchedule ts in appConfig.Schedules)
+            {
+                if (ts.StartTime <= now && now < ts.EndTime)
+                {
+                    return ts;
+                }
+            }
+            return null;
         }
 
         private void OpenConfiguration(bool reopen = false)
@@ -133,28 +153,61 @@ namespace RpaNotificator
                                                     MessageBoxIcon.Question);
                 if (result != DialogResult.Yes)
                     return;
+                else
+                    listViewIntervalList.Items.Clear();
             }
 
             try
             {
-                appConfig = new AppConfig();
+                appConfig = AppConfig.Load();
             }
-            catch (System.Configuration.SettingsPropertyNotFoundException ex)
+            catch (FileNotFoundException ex)
             {
-                MessageBox.Show("設定ファイルが見つかりませんでした。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("設定ファイルが見つかりませんでした。\r\n\r\n" + ex.ToString(), "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close();
+            }
+            catch (System.Configuration.ConfigurationErrorsException ex)
+            {
+                MessageBox.Show("設定ファイルの読み込みに失敗しました\r\n\r\n" + ex.ToString(), "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 this.Close();
             }
 
             this.textBoxLogDir.Text = appConfig.LogFileDirectory;
             this.textBoxLogFile.Text = appConfig.LogFileName;
             this.textBoxWebhook.Text = appConfig.WebhookUrl;
-            this.checkBoxNormalReport.Checked = appConfig.ReportNormalLog;
-            this.checkBoxErrorReport.Checked = appConfig.ReportErrorLog;
-            this.numericUpDownRefreshInterval.Value = appConfig.RefreshInterval;
-            this.numericUpDownLogUpdateInterval.Value = appConfig.LogUpdateInterval;
+            foreach(AppConfig.TimeSchedule ts in appConfig.Schedules)
+            {
+                listViewIntervalList.Items.Add(new ListViewItem(new string[] {
+                    ts.StartTime.ToString("HH:mm"),
+                    ts.EndTime.ToString("HH:mm"),
+                    ts.RefreshInterval.ToString(),
+                    ts.ErrorJudgementInterval.ToString(),
+                    ts.SuccessReport ? "○" : "×",
+                    ts.ErrorReport ? "○" : "×"}));
+            }
 
             if (reopen)
                 MessageBox.Show("設定を再読込しました。", "確認", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void ApplyIntervalList()
+        {
+            appConfig.LogFileDirectory = textBoxLogDir.Text;
+            appConfig.LogFileName = textBoxLogFile.Text;
+            appConfig.WebhookUrl = textBoxWebhook.Text;
+            List<AppConfig.TimeSchedule> tsList = new List<AppConfig.TimeSchedule>();
+            foreach (ListViewItem item in listViewIntervalList.Items)
+            {
+                AppConfig.TimeSchedule ts = new AppConfig.TimeSchedule();
+                ts.StartTime = DateTime.Parse(item.SubItems[0].Text);
+                ts.EndTime = DateTime.Parse(item.SubItems[1].Text);
+                ts.RefreshInterval = int.Parse(item.SubItems[2].Text);
+                ts.ErrorJudgementInterval = int.Parse(item.SubItems[3].Text);
+                ts.SuccessReport = item.SubItems[4].Text.Equals("○");
+                ts.ErrorReport = item.SubItems[5].Text.Equals("○");
+                tsList.Add(ts);
+            }
+            appConfig.Schedules = tsList.ToArray();
         }
 
         private void SaveConfiguration()
@@ -166,14 +219,7 @@ namespace RpaNotificator
             if (result != DialogResult.Yes)
                 return;
 
-            appConfig.LogFileDirectory = textBoxLogDir.Text;
-            appConfig.LogFileName = textBoxLogFile.Text;
-            appConfig.WebhookUrl = textBoxWebhook.Text;
-            appConfig.ReportNormalLog = checkBoxNormalReport.Checked;
-            appConfig.ReportErrorLog = checkBoxErrorReport.Checked;
-            appConfig.RefreshInterval = decimal.ToInt32(numericUpDownRefreshInterval.Value);
-            appConfig.LogUpdateInterval = decimal.ToInt32(numericUpDownLogUpdateInterval.Value);
-
+            ApplyIntervalList();
             appConfig.Save();
 
             MessageBox.Show("設定を保存しました。", "確認", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -224,9 +270,13 @@ namespace RpaNotificator
             string refreshInterval = numericUpDownRefreshInterval.Value.ToString();
             string logUpdateInterval = numericUpDownLogUpdateInterval.Value.ToString();
 
-            listViewIntervalList.Items.Add(new ListViewItem(new string[] { startTimeStr, endTimeStr, refreshInterval, logUpdateInterval }));
+            string successReport = checkBoxNormalReport.Checked ? "○" : "×";
+            string errorReport = checkBoxErrorReport.Checked ? "○": "×";
+
+            listViewIntervalList.Items.Add(new ListViewItem(new string[] { startTimeStr, endTimeStr, refreshInterval, logUpdateInterval, successReport, errorReport }));
 
             listViewIntervalList.ListViewItemSorter = new ListViewItemComparer(0);
+            ApplyIntervalList();
         }
 
 
@@ -283,6 +333,8 @@ namespace RpaNotificator
             dateTimePickerEndTime.Value = endTime;
             numericUpDownRefreshInterval.Value = refreshInterval;
             numericUpDownLogUpdateInterval.Value = logupdateInterval;
+            checkBoxNormalReport.Checked = item.SubItems[4].Text.Equals("○");
+            checkBoxErrorReport.Checked = item.SubItems[5].Text.Equals("○");
         }
 
         private void buttonUpdateToIntervalList_Click(object sender, EventArgs e)
@@ -294,6 +346,9 @@ namespace RpaNotificator
                 selected.SubItems[1].Text = dateTimePickerEndTime.Text;
                 selected.SubItems[2].Text = numericUpDownRefreshInterval.Value.ToString();
                 selected.SubItems[3].Text = numericUpDownLogUpdateInterval.Value.ToString();
+                selected.SubItems[4].Text = checkBoxNormalReport.Checked ? "○" : "×";
+                selected.SubItems[5].Text = checkBoxErrorReport.Checked ? "○" : "×";
+                ApplyIntervalList();
             }
         }
 
@@ -304,6 +359,47 @@ namespace RpaNotificator
                 foreach (ListViewItem selected in listViewIntervalList.SelectedItems)
                 {
                     listViewIntervalList.Items.Remove(selected);
+                }
+                ApplyIntervalList();
+            }
+        }
+
+        private void listView1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.A)
+            {
+                foreach (ListViewItem item in listView1.Items)
+                {
+                    item.Selected = true;
+                }
+            }
+            else if (e.Control && e.KeyCode == Keys.C)
+            {
+                if (listView1.SelectedItems.Count > 0)
+                {
+                    string str = "";
+                    foreach (ListViewItem selected in listView1.SelectedItems)
+                    {
+                        var a = selected.SubItems[1];
+                        foreach (ListViewItem.ListViewSubItem subitem in selected.SubItems)
+                        {
+                            str += subitem.Text + "\t";
+                        }
+                        str = str.Trim() + "\r\n";
+                    }
+                    str = System.Text.RegularExpressions.Regex.Replace(str, @"[\r\n]+$", "");
+                    Clipboard.SetText(str);
+                }
+            }
+        }
+
+        private void listViewIntervalList_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Control && e.KeyCode == Keys.A)
+            {
+                foreach (ListViewItem item in listViewIntervalList.Items)
+                {
+                    item.Selected = true;
                 }
             }
         }

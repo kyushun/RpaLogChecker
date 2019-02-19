@@ -28,9 +28,9 @@ namespace RpaNotificator
                 this._logFileName = value;
             }
         }
+        private string webhookUrl;
         private bool normalReport;
         private bool errorReport;
-        private int refreshInterval;
         private int logUpdateInterval;
 
         private Notificator.HangoutsChat chat;
@@ -40,7 +40,7 @@ namespace RpaNotificator
             MISSING,
             ERROR
         }
-        private RPA_STATUS status = RPA_STATUS.SUCCESS;
+        private static RPA_STATUS status = RPA_STATUS.SUCCESS;
         private bool IsFailed
         {
             get { return (status != RPA_STATUS.SUCCESS); }
@@ -53,14 +53,14 @@ namespace RpaNotificator
         public static int errorsCount = 0;
         public static int missingsCount = 0;
 
-        public RpaChecker(Form1 form1, string logFileDir, string logFileName, string webhookUrl, bool normalReport, bool errorReport, int refreshInterval, int logUpdateInterval)
+        public RpaChecker(Form1 form1, string logFileDir, string logFileName, string webhookUrl, bool normalReport, bool errorReport, int logUpdateInterval)
         {
             this.form1 = form1;
             this.logFileDir = logFileDir;
             this.logFileName = logFileName;
+            this.webhookUrl = webhookUrl;
             this.normalReport = normalReport;
             this.errorReport = errorReport;
-            this.refreshInterval = refreshInterval;
             this.logUpdateInterval = logUpdateInterval;
 
             chat = new Notificator.HangoutsChat(webhookUrl);
@@ -262,6 +262,7 @@ namespace RpaNotificator
 
         public void ResetCount()
         {
+            status = RPA_STATUS.SUCCESS;
             traialsCount = 0;
             errorsCount = 0;
             missingsCount = 0;

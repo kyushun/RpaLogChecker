@@ -13,7 +13,7 @@ namespace RpaNotificator.Notificator
     {
         private string THREAD_NAME_REGEX = "\"thread\":{\"name\":\"(.*?)\"}";
         private string webhookUrl = "";
-        private string pastThreadName = null;
+        private static string pastThreadName = null;
 
         public HangoutsChat(string webhookUrl)
         {
