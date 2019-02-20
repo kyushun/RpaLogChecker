@@ -260,9 +260,14 @@ namespace RpaNotificator
             return $"{_min}分{_sec}秒";
         }
 
-        public void ResetCount()
+        public void ResetAll()
         {
             status = RPA_STATUS.SUCCESS;
+            ResetCount();
+        }
+
+        public void ResetCount()
+        {
             traialsCount = 0;
             errorsCount = 0;
             missingsCount = 0;

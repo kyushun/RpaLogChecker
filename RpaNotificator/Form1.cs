@@ -126,7 +126,7 @@ namespace RpaNotificator
                 this.isRunning = false;
                 buttonRun.Text = "実行";
                 buttonSaveConfig.Enabled = true;
-                rpaChecker?.ResetCount();
+                rpaChecker?.ResetAll();
             }
         }
 
