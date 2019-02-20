@@ -40,7 +40,7 @@ namespace RpaNotificator
                     if (isRunning && DateTime.Now.Hour == 18 && lastFinalReport.Date.CompareTo(DateTime.Now.Date) == -1)
                     {
                         lastFinalReport = DateTime.Now;
-                        rpaChecker.SendFinalReport();
+                        rpaChecker?.SendFinalReport();
                     }
                     await Task.Delay(30 * 1000);
                 }
@@ -126,16 +126,16 @@ namespace RpaNotificator
                 this.isRunning = false;
                 buttonRun.Text = "実行";
                 buttonSaveConfig.Enabled = true;
-                rpaChecker.ResetCount();
+                rpaChecker?.ResetCount();
             }
         }
 
         private AppConfig.TimeSchedule CurrentlyActiveSchedule()
         {
-            DateTime now = DateTime.Now;
+            TimeSpan now = DateTime.Now.TimeOfDay;
             foreach (AppConfig.TimeSchedule ts in appConfig.Schedules)
             {
-                if (ts.StartTime <= now && now < ts.EndTime)
+                if (ts.StartTime.TotalMinutes <= now.TotalMinutes && now.TotalMinutes <= ts.EndTime.TotalMinutes)
                 {
                     return ts;
                 }
@@ -178,8 +178,8 @@ namespace RpaNotificator
             foreach(AppConfig.TimeSchedule ts in appConfig.Schedules)
             {
                 listViewIntervalList.Items.Add(new ListViewItem(new string[] {
-                    ts.StartTime.ToString("HH:mm"),
-                    ts.EndTime.ToString("HH:mm"),
+                    ts.StartTime.ToString(@"hh\:mm"),
+                    ts.EndTime.ToString(@"hh\:mm"),
                     ts.RefreshInterval.ToString(),
                     ts.ErrorJudgementInterval.ToString(),
                     ts.SuccessReport ? "○" : "×",
@@ -199,8 +199,8 @@ namespace RpaNotificator
             foreach (ListViewItem item in listViewIntervalList.Items)
             {
                 AppConfig.TimeSchedule ts = new AppConfig.TimeSchedule();
-                ts.StartTime = DateTime.Parse(item.SubItems[0].Text);
-                ts.EndTime = DateTime.Parse(item.SubItems[1].Text);
+                ts.StartTime = TimeSpan.Parse(item.SubItems[0].Text);
+                ts.EndTime = TimeSpan.Parse(item.SubItems[1].Text);
                 ts.RefreshInterval = int.Parse(item.SubItems[2].Text);
                 ts.ErrorJudgementInterval = int.Parse(item.SubItems[3].Text);
                 ts.SuccessReport = item.SubItems[4].Text.Equals("○");

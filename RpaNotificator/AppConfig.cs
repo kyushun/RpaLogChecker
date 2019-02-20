@@ -21,8 +21,8 @@ namespace RpaNotificator
 
         public class TimeSchedule
         {
-            public DateTime StartTime { get; set; } = DateTime.Now;
-            public DateTime EndTime { get; set; } = DateTime.Now;
+            public TimeSpan StartTime { get; set; } = DateTime.Now.TimeOfDay;
+            public TimeSpan EndTime { get; set; } = DateTime.Now.TimeOfDay;
             public int RefreshInterval { get; set; } = 1;
             public int ErrorJudgementInterval { get; set; } = 1;
             public bool SuccessReport { get; set; } = false;
